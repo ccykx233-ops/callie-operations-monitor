@@ -74,11 +74,6 @@ def bootstrap(owner_url: str, password: str) -> None:
                 )
             cursor.execute("CREATE SCHEMA IF NOT EXISTS callie_monitor")
             cursor.execute(
-                sql.SQL("ALTER SCHEMA callie_monitor OWNER TO {}").format(
-                    sql.Identifier(ROLE)
-                )
-            )
-            cursor.execute(
                 sql.SQL("GRANT USAGE, CREATE ON SCHEMA callie_monitor TO {}").format(
                     sql.Identifier(ROLE)
                 )
