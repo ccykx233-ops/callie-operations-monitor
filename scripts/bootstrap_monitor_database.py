@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import json
 import os
 
 import psycopg
@@ -58,15 +59,15 @@ def bootstrap(owner_url: str, password: str) -> None:
                     sql.Identifier(ROLE)
                 )
             )
-            cursor.execute(
-                sql.SQL("REVOKE ALL PRIVILEGES ON ALL TABLES IN SCHEMA public FROM {}").format(
-                    sql.Identifier(ROLE)
-                )
-            )
             for table in READ_TABLES:
                 cursor.execute("SELECT to_regclass(%s)", (f"public.{table}",))
                 if cursor.fetchone()[0] is None:
                     raise RuntimeError("REQUIRED_BUSINESS_TABLE_MISSING")
+                cursor.execute(
+                    sql.SQL("REVOKE ALL PRIVILEGES ON TABLE public.{} FROM {}").format(
+                        sql.Identifier(table), sql.Identifier(ROLE)
+                    )
+                )
                 cursor.execute(
                     sql.SQL("GRANT SELECT ON TABLE public.{} TO {}").format(
                         sql.Identifier(table), sql.Identifier(ROLE)
@@ -101,8 +102,17 @@ def main() -> int:
             os.getenv("DATABASE_OWNER_URL", ""),
             os.getenv("MONITOR_ROLE_PASSWORD", ""),
         )
-    except Exception:
-        print("monitor_database_bootstrap_failed")
+    except Exception as exc:
+        print(
+            json.dumps(
+                {
+                    "status": "monitor_database_bootstrap_failed",
+                    "error_type": type(exc).__name__,
+                    "sqlstate": getattr(exc, "sqlstate", None),
+                },
+                sort_keys=True,
+            )
+        )
         return 1
     print("monitor_database_bootstrap_ok")
     return 0

@@ -39,6 +39,19 @@ def main() -> int:
                     can_read, can_write = cursor.fetchone()
                     if not can_read or can_write:
                         raise RuntimeError("BUSINESS_TABLE_PRIVILEGE_INVALID")
+                cursor.execute(
+                    "SELECT c.relname FROM pg_class c "
+                    "JOIN pg_namespace n ON n.oid=c.relnamespace "
+                    "WHERE n.nspname='public' AND c.relkind IN ('r','p','v','m','f') "
+                    "AND NOT (c.relname = ANY(%s)) "
+                    "AND (has_table_privilege(current_user,c.oid,'SELECT') "
+                    "OR has_table_privilege(current_user,c.oid,'INSERT') "
+                    "OR has_table_privilege(current_user,c.oid,'UPDATE') "
+                    "OR has_table_privilege(current_user,c.oid,'DELETE'))",
+                    (list(READ_TABLES),),
+                )
+                if cursor.fetchone() is not None:
+                    raise RuntimeError("UNEXPECTED_PUBLIC_TABLE_PRIVILEGE")
                 for table in MONITOR_TABLES:
                     cursor.execute("SELECT to_regclass(%s)", (f"callie_monitor.{table}",))
                     if cursor.fetchone()[0] is None:
