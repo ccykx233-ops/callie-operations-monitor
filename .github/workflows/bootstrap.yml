@@ -1,0 +1,26 @@
+name: Bootstrap monitor database
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  bootstrap:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      DATABASE_OWNER_URL: ${{ secrets.DATABASE_OWNER_URL }}
+      MONITOR_ROLE_PASSWORD: ${{ secrets.MONITOR_ROLE_PASSWORD }}
+      MONITOR_DATABASE_URL: ${{ secrets.MONITOR_DATABASE_URL }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - run: python -m pip install -r requirements.txt
+      - run: python scripts/bootstrap_monitor_database.py --apply
+      - run: DATABASE_URL="$MONITOR_DATABASE_URL" python scripts/migrate_monitoring.py --apply
+      - run: python scripts/verify_monitor_database.py
