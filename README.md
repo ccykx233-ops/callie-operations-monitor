@@ -34,6 +34,8 @@ Repository variables:
 
 The Windows host runs two small one-shot exporters once per hour. They do not decide health or send DingTalk messages: the workbench exporter writes only an aggregate receipt count, and the order exporter reads the existing A7 state files and writes only runtime status. Their restricted monitor database credential is configured locally and is not committed.
 
+On hosts where Task Scheduler registration is restricted, `scripts/run-callie-monitor-daemon.ps1` is the independent login-started scheduler. It invokes the workbench exporter after minute 02 and the order exporter after minute 04, retries failures after five minutes, and writes only a local heartbeat/status file. `scripts/run-callie-monitor-reporter.ps1` is the one-shot wrapper used by the daemon. Neither script changes business tables or customer state.
+
 ## Database migration
 
 The migration is explicit and never runs during import or monitor startup:
