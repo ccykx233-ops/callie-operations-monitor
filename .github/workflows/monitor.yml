@@ -2,6 +2,7 @@ name: Callie operations monitor
 
 on:
   schedule:
+    # Offset from the top of the hour; GitHub can delay high-load minute 00 jobs.
     - cron: "7,17,27,37,47,57 * * * *"
     - cron: "0 10 * * *"
   workflow_dispatch:
