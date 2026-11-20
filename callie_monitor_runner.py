@@ -72,7 +72,9 @@ def load_config() -> MonitorConfig:
     delay = int(os.getenv("MONITOR_WORKER_CONFIRM_DELAY_SECONDS", "60"))
     if not 0 <= delay <= 120:
         raise ValueError("CONFIG_WORKER_CONFIRM_DELAY_INVALID")
-    baseline_text = _required("MONITOR_ORDER_HISTORICAL_BASELINE_AT")
+    baseline_text = os.getenv(
+        "MONITOR_ORDER_HISTORICAL_BASELINE_AT", "2026-11-19T17:00:00+08:00"
+    ).strip()
     baseline_at = datetime.fromisoformat(baseline_text.replace("Z", "+00:00"))
     if baseline_at.tzinfo is None:
         raise ValueError("CONFIG_ORDER_BASELINE_MUST_INCLUDE_TIMEZONE")
