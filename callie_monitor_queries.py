@@ -80,7 +80,10 @@ SELECT request.id AS request_id,
 FROM dispatch_dify_agent_order_requests_v2 AS request
 JOIN dispatch_dify_agent_runs_v1 AS run ON run.id = request.agent_run_id
 WHERE (request.created_at >= :window_start AND request.created_at < :window_end)
-   OR request.status IN ('pending','running')
+   OR (
+       request.status IN ('pending','running')
+       AND request.created_at >= :historical_baseline_at
+   )
 ORDER BY request.created_at
 """)
 
@@ -151,11 +154,19 @@ def read_workbench_hour(
 
 
 def read_order_requests(
-    connection: Connection, *, window_start: datetime, window_end: datetime
+    connection: Connection,
+    *,
+    window_start: datetime,
+    window_end: datetime,
+    historical_baseline_at: datetime,
 ) -> list[dict[str, Any]]:
     rows = connection.execute(
         ORDER_REQUESTS_SQL,
-        {"window_start": window_start, "window_end": window_end},
+        {
+            "window_start": window_start,
+            "window_end": window_end,
+            "historical_baseline_at": historical_baseline_at,
+        },
     ).mappings()
     return [dict(row) for row in rows]
 

@@ -50,6 +50,7 @@ class MonitorConfig:
     integration_ids: tuple[str, ...]
     source_revision: str | None
     worker_confirm_delay_seconds: int
+    order_historical_baseline_at: datetime
     active_mode: bool
     dingtalk_webhook_url: str | None
     dingtalk_secret: str | None
@@ -71,6 +72,10 @@ def load_config() -> MonitorConfig:
     delay = int(os.getenv("MONITOR_WORKER_CONFIRM_DELAY_SECONDS", "60"))
     if not 0 <= delay <= 120:
         raise ValueError("CONFIG_WORKER_CONFIRM_DELAY_INVALID")
+    baseline_text = _required("MONITOR_ORDER_HISTORICAL_BASELINE_AT")
+    baseline_at = datetime.fromisoformat(baseline_text.replace("Z", "+00:00"))
+    if baseline_at.tzinfo is None:
+        raise ValueError("CONFIG_ORDER_BASELINE_MUST_INCLUDE_TIMEZONE")
     active = os.getenv("MONITOR_MODE", "dry_run").strip().lower() == "active"
     webhook = os.getenv("DINGTALK_WEBHOOK_URL", "").strip() or None
     secret = os.getenv("DINGTALK_SECRET", "").strip() or None
@@ -84,6 +89,7 @@ def load_config() -> MonitorConfig:
         integration_ids=integrations,
         source_revision=os.getenv("GITHUB_SHA", "").strip() or None,
         worker_confirm_delay_seconds=delay,
+        order_historical_baseline_at=baseline_at.astimezone(timezone.utc),
         active_mode=active,
         dingtalk_webhook_url=webhook,
         dingtalk_secret=secret,
@@ -313,7 +319,10 @@ class MonitorRunner:
         try:
             with self.engine.connect() as connection:
                 requests = read_order_requests(
-                    connection, window_start=window_start, window_end=window_end
+                    connection,
+                    window_start=window_start,
+                    window_end=window_end,
+                    historical_baseline_at=self.config.order_historical_baseline_at,
                 )
                 runtime = read_order_runtime(connection)
             findings = evaluate_order_requests(requests, now=started_at)

@@ -31,6 +31,7 @@ Repository variables:
 - `MONITOR_WORKER_INSTANCE_ID`
 - `MONITOR_WORKER_CABINET_ID`
 - `MONITOR_INTEGRATION_IDS`: exactly 18 unique comma-separated channel IDs.
+- `MONITOR_ORDER_HISTORICAL_BASELINE_AT`: timezone-aware cutover timestamp. Existing open order requests created before this instant are excluded from ongoing alert checks; requests in the rolling hour and all post-baseline open requests remain checked.
 
 The Windows host runs two small one-shot exporters once per hour. They do not decide health or send DingTalk messages: the workbench exporter writes only an aggregate receipt count, and the order exporter reads the existing A7 state files and writes only runtime status. Their restricted monitor database credential is configured locally and is not committed.
 
